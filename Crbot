@@ -1,0 +1,128 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import yfinance as yf
+import ta
+from sklearn.linear_model import LinearRegression
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+import telegram
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+import subprocess
+
+# Функція для перевірки наявності необхідних залежностей
+def check_dependencies():
+    dependencies = ['pandas', 'matplotlib', 'yfinance', 'ta', 'sklearn', 'telegram']
+    missing_dependencies = []
+    for dependency in dependencies:
+        try:
+            __import__(dependency)
+        except ImportError:
+            missing_dependencies.append(dependency)
+    return missing_dependencies
+
+# Функція для автоматичного встановлення необхідних залежностей
+def install_dependencies():
+    dependencies = ['pandas', 'matplotlib', 'yfinance', 'ta', 'sklearn', 'python-telegram-bot']
+    for dependency in dependencies:
+        subprocess.call(['pip', 'install', dependency])
+
+# Перевірка наявності необхідних залежностей
+missing_deps = check_dependencies()
+if missing_deps:
+    print("Необхідно встановити наступні залежності:", missing_deps)
+    install_deps = input("Бажаєте автоматично встановити залежності? (y/n): ")
+    if install_deps.lower() == 'y':
+        install_dependencies()
+    else:
+        print("Встановлення залежностей скасовано.")
+        exit()
+
+# Функція для введення даних користувачем
+def user_input(update, context):
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Введіть символ тікера:")
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Наприклад: AAPL")
+    return "waiting_ticker"
+
+# Функція для отримання даних
+def get_data(ticker, instrument_type, start_date, end_date):
+    # Реалізуйте отримання даних згідно до вашої логіки
+    pass
+
+# Аналіз даних та створення візуалізацій
+def analyze_data(data, instrument_type, update, context):
+    # Реалізуйте аналіз даних та створення візуалізацій згідно до вашої логіки
+    pass
+
+# Збереження результатів аналізу в файл
+def save_results(data, instrument_type, update, context):
+    # Реалізуйте збереження результатів аналізу в файл згідно до вашої логіки
+    pass
+
+# Основна функція скрипту
+def main(update, context):
+    # Отримання поточного стану користувача
+    state = context.user_data.get('state', 'waiting_ticker')
+
+    if state == 'waiting_ticker':
+        ticker = update.message.text
+        context.user_data['ticker'] = ticker
+        context.bot.send_message(chat_id=update.effective_chat.id, text="Введіть тип інструменту (stock, option, future):")
+        context.user_data['state'] = 'waiting_instrument_type'
+
+    elif state == 'waiting_instrument_type':
+        instrument_type = update.message.text
+        context.user_data['instrument_type'] = instrument_type
+        context.bot.send_message(chat_id=update.effective_chat.id, text="Введіть початкову дату (рік-місяць-день):")
+        context.user_data['state'] = 'waiting_start_date'
+
+    elif state == 'waiting_start_date':
+        start_date = update.message.text
+        context.user_data['start_date'] = start_date
+        context.bot.send_message(chat_id=update.effective_chat.id, text="Введіть кінцеву дату (рік-місяць-день):")
+        context.user_data['state'] = 'waiting_end_date'
+
+    elif state == 'waiting_end_date':
+        end_date = update.message.text
+        context.user_data['end_date'] = end_date
+
+        # Отримання введених даних
+        ticker = context.user_data['ticker']
+        instrument_type = context.user_data['instrument_type']
+        start_date = context.user_data['start_date']
+        end_date = context.user_data['end_date']
+
+        # Отримання даних
+        data = get_data(ticker, instrument_type, start_date, end_date)
+
+        if data is not None:
+            analyze_data(data, instrument_type, update, context)
+            save_results(data, instrument_type, update, context)
+
+        # Скидання стану користувача
+        context.user_data.clear()
+
+# Виклик основної функції
+def start(update, context):
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Вітаю! Цей бот допоможе вам проаналізувати ринок. Будь ласка, слідуйте інструкціям для введення необхідної інформації.")
+    user_input(update, context)
+
+# Основна функція скрипту
+def main():
+    updater = Updater(token='5699280547:AAH5GhpmC_ZXNw_N9blJ3QnsWs2_mVLPMno', use_context=True)
+    dispatcher = updater.dispatcher
+
+    # Додавання обробників команд та повідомлень
+    start_handler = CommandHandler('start', start)
+    dispatcher.add_handler(start_handler)
+
+    # Додавання обробника повідомлень для введення даних
+    message_handler = MessageHandler(Filters.text & ~Filters.command, main)
+    dispatcher.add_handler(message_handler)
+
+    # Запуск телеграм-бота
+    updater.start_polling()
+
+if __name__ == '__main__':
+    main()
